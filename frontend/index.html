@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Carpool — Ride Matching Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+<style>
+  :root{
+    --paper:#FAF6EF;
+    --paper-raised:#F2ECDF;
+    --ink:#1E2233;
+    --ink-soft:#5B5F72;
+    --line:#DED4BE;
+    --amber:#D98A2B;
+    --amber-deep:#B56E1B;
+    --teal:#2C6E63;
+    --teal-deep:#1E4F47;
+    --coral:#C1443D;
+    --posted:#8A6D1F;
+    --confirmed:#2C6E63;
+    --ongoing:#B56E1B;
+    --completed:#1E4F47;
+    --cancelled:#C1443D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.5;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk',sans-serif;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  #root{min-height:100vh;}
+
+  .shell{max-width:1180px;margin:0 auto;padding:0 28px 80px;}
+
+  .topbar{
+    border-bottom:1px solid var(--line);
+    padding:22px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--amber),var(--amber-deep));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk';font-weight:700;color:#fff;font-size:15px;
+    flex-shrink:0;
+  }
+  .brand h1{font-size:20px;margin:0;font-weight:600;}
+  .brand span{color:var(--ink-soft);font-size:13px;}
+
+  .conn{
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;color:var(--ink-soft);
+    padding:7px 12px;border:1px solid var(--line);border-radius:20px;
+    background:var(--paper-raised);
+  }
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot.up{background:var(--teal);box-shadow:0 0 0 3px rgba(44,110,99,0.15);}
+  .dot.down{background:var(--coral);box-shadow:0 0 0 3px rgba(193,68,61,0.15);}
+  .dot.checking{background:var(--amber);box-shadow:0 0 0 3px rgba(217,138,43,0.15);}
+
+  .intro{padding:36px 0 8px;}
+  .intro h2{font-size:26px;margin:0 0 6px;}
+  .intro p{color:var(--ink-soft);margin:0;max-width:620px;font-size:15px;}
+
+  .tabs{
+    display:flex;gap:4px;margin:28px 0 22px;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  .tab{
+    padding:10px 16px;font-size:14px;font-weight:500;color:var(--ink-soft);
+    background:none;border:none;cursor:pointer;white-space:nowrap;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+    font-family:inherit;
+  }
+  .tab.active{color:var(--ink);border-bottom-color:var(--amber-deep);font-weight:600;}
+  .tab:hover:not(.active){color:var(--ink);}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1.4fr;gap:24px;align-items:start;}
+  @media (max-width:860px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:22px;
+  }
+  .card h3{font-size:15px;margin:0 0 4px;font-weight:600;}
+  .card .sub{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
+
+  label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:5px;margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  input,select{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
+    font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber-deep);}
+
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .btn{
+    margin-top:18px;padding:10px 18px;border-radius:7px;border:none;
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    background:var(--amber-deep);color:#fff;
+  }
+  .btn:hover{background:#9A5D16;}
+  .btn:disabled{background:#C9BFA8;cursor:not-allowed;}
+  .btn.ghost{background:none;color:var(--ink);border:1px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--ink-soft);}
+  .btn.small{padding:6px 12px;font-size:12.5px;margin-top:0;}
+  .btn.teal{background:var(--teal);}
+  .btn.teal:hover{background:var(--teal-deep);}
+  .btn.coral{background:var(--coral);}
+  .btn.coral:hover{background:#9E3A34;}
+
+  .msg{
+    margin-top:14px;padding:10px 12px;border-radius:7px;font-size:13px;
+  }
+  .msg.ok{background:rgba(44,110,99,0.1);color:var(--teal-deep);}
+  .msg.err{background:rgba(193,68,61,0.1);color:var(--coral);}
+
+  .ride{
+    border:1px solid var(--line);border-radius:9px;padding:16px;margin-bottom:12px;
+    background:var(--paper-raised);
+  }
+  .ride-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ride-route{font-family:'Space Grotesk';font-weight:600;font-size:15.5px;}
+  .ride-route .arrow{color:var(--amber-deep);margin:0 6px;}
+  .ride-meta{color:var(--ink-soft);font-size:12.5px;margin-top:4px;}
+  .badge{
+    font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;color:#fff;
+    text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;
+  }
+  .ride-price{font-family:'Space Grotesk';font-weight:600;font-size:17px;margin-top:2px;}
+  .ride-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:14px;
+    border:1px dashed var(--line);border-radius:9px;
+  }
+
+  .feed{list-style:none;margin:0;padding:0;}
+  .feed li{
+    padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;
+    display:flex;gap:10px;align-items:baseline;
+  }
+  .feed li:last-child{border-bottom:none;}
+  .feed .t{color:var(--ink-soft);font-size:11px;flex-shrink:0;width:58px;}
+  .feed .icon{flex-shrink:0;}
+
+  .strategy-note{
+    font-size:12.5px;color:var(--ink-soft);background:var(--paper-raised);
+    border-radius:7px;padding:10px 12px;margin-top:14px;line-height:1.5;
+  }
+  .strategy-note b{color:var(--ink);}
+
+  .field-hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%235B5F72' d='M7 10l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:18px;padding-right:32px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const API_BASE = "https://smart-carpool-kspo.onrender.com";
+
+const STATUS_COLOR = {
+  POSTED: "var(--posted)",
+  CONFIRMED: "var(--confirmed)",
+  ONGOING: "var(--ongoing)",
+  COMPLETED: "var(--completed)",
+  CANCELLED: "var(--cancelled)",
+};
+
+function fmtTime(iso){
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){return iso;}
+}
+function nowClock(){
+  const d = new Date();
+  return d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+
+function Topbar({status}){
+  const label = status === 'up' ? 'Backend connected' : status === 'down' ? 'Backend unreachable' : 'Checking backend…';
+  return (
+    <div className="topbar">
+      <div className="brand">
+        <div className="brand-mark">SC</div>
+        <div>
+          <h1>Smart Carpool</h1>
+        </div>
+        <span>Ride matching console</span>
+      </div>
+      <div className="conn">
+        <span className={"dot " + status}></span>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function Tabs({active, setActive}){
+  const items = [
+    ["register","Register"],
+    ["postride","Post a ride"],
+    ["find","Find a ride"],
+    ["myrides","All rides"],
+  ];
+  return (
+    <div className="tabs">
+      {items.map(([key,label]) => (
+        <button key={key} className={"tab" + (active===key ? " active":"")} onClick={()=>setActive(key)}>{label}</button>
+      ))}
+    </div>
+  );
+}
+
+function Feed({events}){
+  return (
+    <div className="card">
+      <h3>Activity</h3>
+      <p className="sub">What the Observer pattern would notify, shown here in real time</p>
+      {events.length === 0 ? (
+        <div className="empty">Nothing yet — actions you take will appear here</div>
+      ) : (
+        <ul className="feed">
+          {events.slice(0,12).map((e,i)=>(
+            <li key={i}>
+              <span className="t mono">{e.time}</span>
+              <span>{e.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function RegisterPanel({addEvent, users, refreshUsers}){
+  const [name,setName]=useState("");
+  const [email,setEmail]=useState("");
+  const [phone,setPhone]=useState("");
+  const [role,setRole]=useState("DRIVER");
+  const [vOwner,setVOwner]=useState("");
+  const [vType,setVType]=useState("CAR");
+  const [vCap,setVCap]=useState(4);
+  const [vPlate,setVPlate]=useState("");
+  const [msg,setMsg]=useState(null);
+  const [vMsg,setVMsg]=useState(null);
+  const [busy,setBusy]=useState(false);
+
+  async function submitUser(e){
+    e.preventDefault();
+    setBusy(true); setMsg(null);
+    try{
+      const res = await fetch(API_BASE+"/api/users",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({name,email,phone,role})
+      });
+      if(!res.ok) throw new Error("Request failed ("+res.status+")");
+      const data = await res.json();
+      setMsg({ok:true,text:"Registered — user #"+data.userId});
+      addEvent("Factory pattern created "+role.toLowerCase()+" "+"\""+name+"\" (id "+data.userId+")");
+      setName("");setEmail("");setPhone("");
+      refreshUsers();
+    }catch(err){
+      setMsg({ok:false,text:"Couldn't reach the backend — is it awake? (Render free instances sleep after inactivity, first request can take ~50s)"});
+    }finally{setBusy(false);}
+  }
+
+  async function submitVehicle(e){
+    e.preventDefault();
+    setBusy(true); setVMsg(null);
+    try{
+      const res = await fetch(API_BASE+"/api/vehicles",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ownerId:Number(vOwner),type:vType,capacity:Number(vCap),numberPlate:vPlate})
+      });
+      if(!res.ok) throw new Error("failed");
+      const data = await res.json();
+      setVMsg({ok:true,text:"Vehicle added — id #"+data.vehicleId});
+      addEvent("Vehicle "+vPlate+" registered to user #"+vOwner);
+      setVPlate("");
+    }catch(err){
+      setVMsg({ok:false,text:"Couldn't add vehicle — check the owner id exists."});
+    }finally{setBusy(false);}
+  }
+
+  return (
+    <div className="grid">
+      <div>
+        <div className="card">
+          <h3>Register a user</h3>
+          <p className="sub">Factory pattern builds the User object with a default rating of 5.0</p>
+          <form onSubmit={submitUser}>
+            <label>Full name</label>
+            <input required value={name} onChange={e=>setName(e.target.value)} placeholder="Arun" />
+            <label>Email</label>
+            <input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="arun@test.com" />
+            <label>Phone</label>
+            <input required value={phone} onChange={e=>setPhone(e.target.value)} placeholder="9999999999" />
+            <label>Role</label>
+            <select value={role} onChange={e=>setRole(e.target.value)}>
+              <option value="DRIVER">Driver</option>
+              <option value="RIDER">Rider</option>
+              <option value="BOTH">Both</option>
+            </select>
+            <button className="btn" disabled={busy}>{busy ? "Registering…" : "Register user"}</button>
+          </form>
+          {msg && <div className={"msg "+(msg.ok?"ok":"err")}>{msg.text}</div>}
+        </div>
+
+        <div className="card" style={{marginTop:20}}>
+          <h3>Register a vehicle</h3>
+          <p className="sub">Link a vehicle to an existing driver's user id</p>
+          <form onSubmit={submitVehicle}>
+            <label>Owner (user id)</label>
+            <input required type="number" value={vOwner} onChange={e=>setVOwner(e.target.value)} placeholder="1" />
+            <div className="row2">
+              <div>
+                <label>Type</label>
+                <select value={vType} onChange={e=>setVType(e.target.value)}>
+                  <option value="CAR">Car</option>
+                  <option value="BIKE">Bike</option>
+                </select>
+              </div>
+              <div>
+                <label>Capacity</label>
+                <input required type="number" min="1" value={vCap} onChange={e=>setVCap(e.target.value)} />
+              </div>
+            </div>
+            <label>Number plate</label>
+            <input required value={vPlate} onChange={e=>setVPlate(e.target.value)} placeholder="TN01AB1234" />
+            <button className="btn teal" disabled={busy}>{busy ? "Adding…" : "Add vehicle"}</button>
+          </form>
+          {vMsg && <div className={"msg "+(vMsg.ok?"ok":"err")}>{vMsg.text}</div>}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Registered users</h3>
+        <p className="sub">{users.length} user{users.length!==1?"s":""} so far — reference their id when adding a vehicle or posting a ride</p>
+        {users.length === 0 ? (
+          <div className="empty">No users yet — register one on the left</div>
+        ) : (
+          users.map(u=>(
+            <div key={u.userId} className="ride">
+              <div className="ride-top">
+                <div>
+                  <div className="ride-route">{u.name} <span style={{color:'var(--ink-soft)',fontWeight:400,fontSize:13}}>· #{u.userId}</span></div>
+                  <div className="ride-meta">{u.email} · {u.phone}</div>
+                </div>
+                <span className="badge" style={{background:'var(--teal)'}}>{u.role}</span>
+              </div>
+              <div className="ride-meta" style={{marginTop:8}}>Rating: {u.rating?.toFixed?.(1) ?? u.rating}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PostRidePanel({addEvent, refreshRides}){
+  const [driverId,setDriverId]=useState("");
+  const [vehicleId,setVehicleId]=useState("");
+  const [source,setSource]=useState("");
+  const [destination,setDestination]=useState("");
+  const [departure,setDeparture]=useState("");
+  const [seats,setSeats]=useState(3);
+  const [cost,setCost]=useState(200);
+  const [msg,setMsg]=useState(null);
+  const [busy,setBusy]=useState(false);
+
+  async function submit(e){
+    e.preventDefault();
+    setBusy(true); setMsg(null);
+    try{
+      const res = await fetch(API_BASE+"/api/rides",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          driverId:Number(driverId), vehicleId:Number(vehicleId),
+          source, destination,
+          departureTime: departure, availableSeats:Number(seats), costPerSeat:Number(cost)
+        })
+      });
+      if(!res.ok) throw new Error("failed");
+      const data = await res.json();
+      setMsg({ok:true,text:"Ride #"+data.rideId+" posted — status POSTED"});
+      addEvent("Ride #"+data.rideId+" posted "+source+" → "+destination+" (Factory + Observer patterns fired)");
+      refreshRides();
+    }catch(err){
+      setMsg({ok:false,text:"Couldn't post the ride — check the driver and vehicle ids exist."});
+    }finally{setBusy(false);}
+  }
+
+  return (
+    <div className="grid">
+      <div className="card">
+        <h3>Post a ride</h3>
+        <p className="sub">Uses the Factory pattern to build the ride, then the Observer pattern notifies driver and riders</p>
+        <form onSubmit={submit}>
+          <div className="row2">
+            <div>
+              <label>Driver (user id)</label>
+              <input required type="number" value={driverId} onChange={e=>setDriverId(e.target.value)} placeholder="1" />
+            </div>
+            <div>
+              <label>Vehicle id</label>
+              <input required type="number" value={vehicleId} onChange={e=>setVehicleId(e.target.value)} placeholder="1" />
+            </div>
+          </div>
+          <div className="row2">
+            <div>
+              <label>Source</label>
+              <input required value={source} onChange={e=>setSource(e.target.value)} placeholder="Madurai" />
+            </div>
+            <div>
+              <label>Destination</label>
+              <input required value={destination} onChange={e=>setDestination(e.target.value)} placeholder="Chennai" />
+            </div>
+          </div>
+          <label>Departure time</label>
+          <input required type="datetime-local" value={departure} onChange={e=>setDeparture(e.target.value)} />
+          <div className="row2">
+            <div>
+              <label>Available seats</label>
+              <input required type="number" min="1" value={seats} onChange={e=>setSeats(e.target.value)} />
+            </div>
+            <div>
+              <label>Cost per seat (₹)</label>
+              <input required type="number" min="0" value={cost} onChange={e=>setCost(e.target.value)} />
+            </div>
+          </div>
+          <button className="btn" disabled={busy}>{busy ? "Posting…" : "Post ride"}</button>
+        </form>
+        {msg && <div className={"msg "+(msg.ok?"ok":"err")}>{msg.text}</div>}
+      </div>
+      <div className="card">
+        <h3>What happens behind this button</h3>
+        <div className="strategy-note">
+          <b>1. Factory pattern —</b> <code>EntityFactory.createRide()</code> builds the Ride object with status defaulted to <b>POSTED</b>.
+        </div>
+        <div className="strategy-note" style={{marginTop:10}}>
+          <b>2. Persistence —</b> the ride is saved through <code>RideRepository</code> into MySQL.
+        </div>
+        <div className="strategy-note" style={{marginTop:10}}>
+          <b>3. Observer pattern —</b> <code>RideEventPublisher</code> notifies every registered observer — the driver notifier and rider notifier both fire a <code>RIDE_POSTED</code> event.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FindRidePanel({addEvent}){
+  const [source,setSource]=useState("Madurai");
+  const [destination,setDestination]=useState("Chennai");
+  const [sortBy,setSortBy]=useState("earliest");
+  const [results,setResults]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const [msg,setMsg]=useState(null);
+
+  const strategyNotes = {
+    earliest: "Sorts matching rides by departure time, soonest first — EarliestDepartureStrategy.",
+    cheapest: "Sorts matching rides by cost per seat, lowest first — CheapestRideStrategy.",
+    seats: "Sorts matching rides by available seats, most first — MostSeatsAvailableStrategy.",
+  };
+
+  async function search(e){
+    e && e.preventDefault();
+    setBusy(true); setMsg(null);
+    try{
+      const url = API_BASE+"/api/rides/search?source="+encodeURIComponent(source)+"&destination="+encodeURIComponent(destination)+"&sortBy="+sortBy;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error("failed");
+      const data = await res.json();
+      setResults(data);
+      addEvent("Searched "+source+" → "+destination+" sorted by "+sortBy+" ("+data.length+" match"+(data.length===1?"":"es")+")");
+    }catch(err){
+      setMsg({ok:false,text:"Search failed — check the backend is reachable."});
+    }finally{setBusy(false);}
+  }
+
+  return (
+    <div className="grid">
+      <div className="card">
+        <h3>Find a ride</h3>
+        <p className="sub">Strategy pattern — pick what matters most, the ranking algorithm swaps underneath</p>
+        <form onSubmit={search}>
+          <div className="row2">
+            <div>
+              <label>Source</label>
+              <input value={source} onChange={e=>setSource(e.target.value)} />
+            </div>
+            <div>
+              <label>Destination</label>
+              <input value={destination} onChange={e=>setDestination(e.target.value)} />
+            </div>
+          </div>
+          <label>Sort by</label>
+          <select value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+            <option value="earliest">Earliest departure</option>
+            <option value="cheapest">Cheapest cost per seat</option>
+            <option value="seats">Most seats available</option>
+          </select>
+          <div className="strategy-note">{strategyNotes[sortBy]}</div>
+          <button className="btn" disabled={busy}>{busy ? "Searching…" : "Search rides"}</button>
+        </form>
+        {msg && <div className="msg err">{msg.text}</div>}
+      </div>
+      <div className="card">
+        <h3>Results</h3>
+        <p className="sub">{results===null ? "Run a search to see matching rides" : results.length+" ride"+(results.length!==1?"s":"")+" found, ordered by "+sortBy}</p>
+        {results===null ? (
+          <div className="empty">No search run yet</div>
+        ) : results.length===0 ? (
+          <div className="empty">No rides match that route</div>
+        ) : (
+          results.map(r=>(
+            <div key={r.rideId} className="ride">
+              <div className="ride-top">
+                <div>
+                  <div className="ride-route">{r.source}<span className="arrow">→</span>{r.destination}</div>
+                  <div className="ride-meta">Driver: {r.driver?.name} · {fmtTime(r.departureTime)} · {r.availableSeats} seat{r.availableSeats!==1?"s":""}</div>
+                </div>
+                <span className="badge" style={{background:STATUS_COLOR[r.status]}}>{r.status}</span>
+              </div>
+              <div className="ride-price">₹{r.costPerSeat}<span style={{fontSize:12,fontWeight:400,color:'var(--ink-soft)'}}> / seat</span></div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AllRidesPanel({rides, refreshRides, addEvent}){
+  const [busyId,setBusyId]=useState(null);
+
+  async function transition(rideId, action, label){
+    setBusyId(rideId+action);
+    try{
+      const res = await fetch(API_BASE+"/api/rides/"+rideId+"/"+action,{method:"PUT"});
+      const data = await res.json();
+      if(data.status){
+        addEvent("Ride #"+rideId+" → "+data.status+" ("+label+" via State pattern)");
+      }else{
+        addEvent("Ride #"+rideId+": "+label+" was rejected — invalid transition from current state");
+      }
+      refreshRides();
+    }catch(err){
+      addEvent("Ride #"+rideId+": request failed");
+    }finally{setBusyId(null);}
+  }
+
+  return (
+    <div className="card">
+      <h3>All rides</h3>
+      <p className="sub">State pattern — buttons only work when the transition is valid from the ride's current status</p>
+      {rides.length===0 ? (
+        <div className="empty">No rides posted yet</div>
+      ) : (
+        rides.map(r=>(
+          <div key={r.rideId} className="ride">
+            <div className="ride-top">
+              <div>
+                <div className="ride-route">#{r.rideId} · {r.source}<span className="arrow">→</span>{r.destination}</div>
+                <div className="ride-meta">Driver: {r.driver?.name} · {fmtTime(r.departureTime)} · ₹{r.costPerSeat}/seat · {r.availableSeats} seats</div>
+              </div>
+              <span className="badge" style={{background:STATUS_COLOR[r.status]}}>{r.status}</span>
+            </div>
+            <div className="ride-actions">
+              <button className="btn small teal" disabled={busyId===r.rideId+"confirm"} onClick={()=>transition(r.rideId,"confirm","Confirm")}>Confirm</button>
+              <button className="btn small" disabled={busyId===r.rideId+"start"} onClick={()=>transition(r.rideId,"start","Start")}>Start</button>
+              <button className="btn small ghost" disabled={busyId===r.rideId+"complete"} onClick={()=>transition(r.rideId,"complete","Complete")}>Complete</button>
+              <button className="btn small coral" disabled={busyId===r.rideId+"cancel"} onClick={()=>transition(r.rideId,"cancel","Cancel")}>Cancel</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function App(){
+  const [active,setActive]=useState("register");
+  const [connStatus,setConnStatus]=useState("checking");
+  const [users,setUsers]=useState([]);
+  const [rides,setRides]=useState([]);
+  const [events,setEvents]=useState([]);
+
+  const addEvent = useCallback((text)=>{
+    setEvents(prev=>[{text,time:nowClock()}, ...prev]);
+  },[]);
+
+  const refreshUsers = useCallback(async ()=>{
+    try{
+      const res = await fetch(API_BASE+"/api/users");
+      if(res.ok){ setUsers(await res.json()); setConnStatus("up"); }
+      else setConnStatus("down");
+    }catch(e){ setConnStatus("down"); }
+  },[]);
+
+  const refreshRides = useCallback(async ()=>{
+    try{
+      const res = await fetch(API_BASE+"/api/rides");
+      if(res.ok){ setRides(await res.json()); setConnStatus("up"); }
+    }catch(e){ setConnStatus("down"); }
+  },[]);
+
+  useEffect(()=>{
+    refreshUsers();
+    refreshRides();
+  },[]);
+
+  return (
+    <React.Fragment>
+      <Topbar status={connStatus} />
+      <div className="shell">
+        <div className="intro">
+          <h2>Ride matching console</h2>
+          <p>A working front end for the Smart Carpool REST API — register drivers and riders, post rides, search with three interchangeable matching strategies, and move rides through their life cycle.</p>
+        </div>
+        <Tabs active={active} setActive={setActive} />
+
+        {active==="register" && <RegisterPanel addEvent={addEvent} users={users} refreshUsers={refreshUsers} />}
+        {active==="postride" && <PostRidePanel addEvent={addEvent} refreshRides={refreshRides} />}
+        {active==="find" && <FindRidePanel addEvent={addEvent} />}
+        {active==="myrides" && (
+          <div className="grid">
+            <AllRidesPanel rides={rides} refreshRides={refreshRides} addEvent={addEvent} />
+            <Feed events={events} />
+          </div>
+        )}
+
+        {active!=="myrides" && (
+          <div style={{marginTop:20}}>
+            <Feed events={events} />
+          </div>
+        )}
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
